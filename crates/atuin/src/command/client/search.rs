@@ -123,6 +123,10 @@ pub struct Cmd {
     /// Set the maximum number of lines Atuin's interface should take up.
     #[arg(long = "inline-height")]
     inline_height: Option<u16>,
+
+    /// Invert the interactive search UI, overriding config
+    #[arg(long)]
+    invert: Option<bool>,
 }
 
 impl Cmd {
@@ -184,6 +188,9 @@ impl Cmd {
         }
         if let Some(inline_height) = self.inline_height {
             settings.inline_height = inline_height;
+        }
+        if let Some(invert) = self.invert {
+            settings.invert = invert;
         }
 
         settings.shell_up_key_binding = self.shell_up_key_binding;
