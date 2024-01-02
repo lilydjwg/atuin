@@ -279,6 +279,7 @@ impl State {
     fn handle_search_input(&mut self, settings: &Settings, input: &KeyEvent) -> InputAction {
         let ctrl = input.modifiers.contains(KeyModifiers::CONTROL);
         let alt = input.modifiers.contains(KeyModifiers::ALT);
+        let shift = input.modifiers.contains(KeyModifiers::SHIFT);
 
         // Use Ctrl-n instead of Alt-n?
         let modfr = if settings.ctrl_n_shortcuts { ctrl } else { alt };
@@ -429,6 +430,13 @@ impl State {
                 // solution, but we treat C-h and C-? the same as backspace to
                 // suppress quirks as much as possible.
                 self.search.input.back();
+            }
+            KeyCode::Delete if shift => {
+                if self.results_len == 0 {
+                    return InputAction::Continue;
+                }
+                let selected = self.results_state.selected();
+                return InputAction::Delete(selected);
             }
             KeyCode::Delete if ctrl => self
                 .search
