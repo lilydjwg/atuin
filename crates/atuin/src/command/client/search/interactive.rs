@@ -473,7 +473,8 @@ impl State {
                     self.search.input.remove();
                 }
             }
-            KeyCode::Char('u') if ctrl => self.search.input.clear(),
+            KeyCode::Char('u') if ctrl => self.search.input.clear_to_start(),
+            KeyCode::Char('k') if ctrl => self.search.input.clear_to_end(),
             KeyCode::Char('r') if ctrl => self.search.rotate_filter_mode(settings, 1),
             KeyCode::Char('s') if ctrl => {
                 self.switched_search_mode = true;
@@ -489,7 +490,7 @@ impl State {
             KeyCode::Char('n' | 'j') if ctrl => {
                 return self.handle_search_down(settings, false);
             }
-            KeyCode::Char('p' | 'k') if ctrl => {
+            KeyCode::Char('p') if ctrl => {
                 return self.handle_search_up(settings, false);
             }
             KeyCode::Char('l') if ctrl => {
