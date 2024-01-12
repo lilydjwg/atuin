@@ -213,7 +213,7 @@ impl State {
             KeyCode::Esc if esc_allow_exit => Some(Self::handle_key_exit(settings)),
             KeyCode::Char('[') if ctrl && esc_allow_exit => Some(Self::handle_key_exit(settings)),
             KeyCode::Tab => Some(InputAction::Accept(self.results_state.selected())),
-            KeyCode::Char('o') if ctrl => {
+            KeyCode::F(12) => {
                 self.tab_index = (self.tab_index + 1) % TAB_TITLES.len();
 
                 Some(InputAction::Continue)
@@ -782,7 +782,7 @@ impl State {
                 Span::styled("<enter>", Style::default().add_modifier(Modifier::BOLD)),
                 Span::raw(": run"),
                 Span::raw(", "),
-                Span::styled("<ctrl-o>", Style::default().add_modifier(Modifier::BOLD)),
+                Span::styled("<F12>", Style::default().add_modifier(Modifier::BOLD)),
                 Span::raw(": inspect"),
             ]))),
 
@@ -790,7 +790,7 @@ impl State {
                 Span::styled("<esc>", Style::default().add_modifier(Modifier::BOLD)),
                 Span::raw(": exit"),
                 Span::raw(", "),
-                Span::styled("<ctrl-o>", Style::default().add_modifier(Modifier::BOLD)),
+                Span::styled("<F12>", Style::default().add_modifier(Modifier::BOLD)),
                 Span::raw(": search"),
                 Span::raw(", "),
                 Span::styled("<ctrl-d>", Style::default().add_modifier(Modifier::BOLD)),
