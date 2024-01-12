@@ -732,7 +732,7 @@ impl History {
 
     #[must_use]
     pub fn success(&self) -> bool {
-        self.exit == 0 || self.duration == -1
+        [0, 141].contains(&self.exit) || self.duration == -1
     }
 
     #[must_use]
