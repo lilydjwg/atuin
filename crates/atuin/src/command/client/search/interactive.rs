@@ -438,17 +438,18 @@ impl State {
                 let selected = self.results_state.selected();
                 return InputAction::Delete(selected);
             }
+            KeyCode::Char('d') if ctrl => {
+                if self.results_len == 0 {
+                    return InputAction::Continue;
+                }
+                let selected = self.results_state.selected();
+                return InputAction::Delete(selected);
+            }
             KeyCode::Delete if ctrl => self
                 .search
                 .input
                 .remove_next_word(&settings.word_chars, settings.word_jump_mode),
             KeyCode::Delete => {
-                self.search.input.remove();
-            }
-            KeyCode::Char('d') if ctrl => {
-                if self.search.input.as_str().is_empty() {
-                    return InputAction::ReturnOriginal;
-                }
                 self.search.input.remove();
             }
             KeyCode::Char('w') if ctrl => {
