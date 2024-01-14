@@ -3390,8 +3390,6 @@ dependencies = [
  "once_cell",
  "paste",
  "percent-encoding",
- "rustls",
- "rustls-pemfile 1.0.4",
  "serde",
  "serde_json",
  "sha2",
@@ -3404,7 +3402,6 @@ dependencies = [
  "tracing",
  "url",
  "uuid",
- "webpki-roots",
 ]
 
 [[package]]
