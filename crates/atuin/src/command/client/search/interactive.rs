@@ -202,7 +202,7 @@ impl State {
         let esc_allow_exit = !(self.tab_index == 0 && self.keymap_mode == KeymapMode::VimInsert);
 
         // support ctrl-a prefix, like screen or tmux
-        if ctrl && input.code == KeyCode::Char('a') {
+        if ctrl && input.code == KeyCode::Char('t') {
             self.prefix = true;
             return InputAction::Continue;
         }
@@ -406,6 +406,7 @@ impl State {
                 .next_word(&settings.word_chars, settings.word_jump_mode),
             KeyCode::Right => self.search.input.right(),
             KeyCode::Char('f') if ctrl => self.search.input.right(),
+            KeyCode::Char('a') if ctrl => self.search.input.start(),
             KeyCode::Home => self.search.input.start(),
             KeyCode::Char('e') if ctrl => self.search.input.end(),
             KeyCode::End => self.search.input.end(),
