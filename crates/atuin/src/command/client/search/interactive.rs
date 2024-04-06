@@ -417,6 +417,7 @@ impl State {
                 .next_word(&settings.word_chars, settings.word_jump_mode),
             KeyCode::Right => self.search.input.right(),
             KeyCode::Char('f') if ctrl => self.search.input.right(),
+            KeyCode::Char('a') if ctrl => self.search.input.start(),
             KeyCode::Home => self.search.input.start(),
             KeyCode::Char('e') if ctrl => self.search.input.end(),
             KeyCode::End => self.search.input.end(),
