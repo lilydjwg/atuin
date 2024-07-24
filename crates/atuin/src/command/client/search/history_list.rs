@@ -301,10 +301,10 @@ impl DrawState<'_> {
         let mut row_highlighted = false;
         if !self.alternate_highlight && (self.y as usize + self.state.offset == self.state.selected)
         {
+            use crossterm::style::Stylize;
             row_highlighted = true;
             // if not applying alternative highlighting to the whole row, color the command
-            style = self.theme.as_style(Meaning::AlertError);
-            style.attributes.set(style::Attribute::Bold);
+            style = style::ContentStyle::new().with(style::Color::Cyan);
         }
 
         // Build the normalized command string (whitespace-collapsed, control chars escaped)
