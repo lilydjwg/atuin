@@ -206,8 +206,8 @@ impl DrawState<'_> {
         if !self.alternate_highlight && (self.y as usize + self.state.offset == self.state.selected)
         {
             // if not applying alternative highlighting to the whole row, color the command
-            style = self.theme.as_style(Meaning::AlertError);
-            style.attributes.set(style::Attribute::Bold);
+            use crossterm::style::Stylize;
+            style = style::ContentStyle::new().with(style::Color::Cyan);
         }
 
         for section in h.command.escape_control().split_ascii_whitespace() {
