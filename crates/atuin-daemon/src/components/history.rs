@@ -141,6 +141,11 @@ impl HistorySvc for HistoryGrpcService {
 
         // Emit the event
         if let Some(handle) = self.inner.handle.read().await.as_ref() {
+            handle
+                .history_db()
+                .save(&h)
+                .await
+                .map_err(|e| Status::internal(format!("failed to write to db: {e:?}")))?;
             handle.emit(DaemonEvent::HistoryStarted(h.clone()));
         }
 
@@ -189,7 +194,7 @@ impl HistorySvc for HistoryGrpcService {
             // Save to database
             handle
                 .history_db()
-                .save(&history)
+                .update(&history)
                 .await
                 .map_err(|e| Status::internal(format!("failed to write to db: {e:?}")))?;
 
