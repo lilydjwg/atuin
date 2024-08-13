@@ -265,7 +265,7 @@ impl GrpcService for Service {
     ) -> Result<Response<StartHistoryReply>, Status> {
         let history: History = request.into_inner().try_into()?;
 
-        let id = self.journal.start_cmd(history);
+        let id = self.journal.start_cmd(history).await?;
 
         Ok(Response::new(StartHistoryReply {
             id: Some(id.into()),

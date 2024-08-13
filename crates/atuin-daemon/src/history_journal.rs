@@ -302,7 +302,9 @@ impl HistoryJournal {
     /// Returns the [`HistoryId`] identifying the in-flight command, which is later used to
     /// [`HistoryJournal::finish`] or [`HistoryJournal::cancel`] it.
     #[must_use]
-    pub fn start_cmd(&self, history: History) -> HistoryId {
+    pub async fn start_cmd(
+        &self, history: History
+    ) -> Result<HistoryId, CmdFinishError> {
         let id = history.id;
 
         let span = tracing::trace_span!(
@@ -317,12 +319,25 @@ impl HistoryJournal {
             let _ = self.broadcast.send(CmdEvent::Started(history.clone()));
         }
 
+        self.history_db
+            .save(&history)
+            .instrument(span.clone())
+            .await
+            .map_err(|e| CmdFinishError::HistoryDbFailed(e.into()))?;
+
+        let (history_record_id, history_record_idx) = self
+            .history_store
+            .push(history.clone())
+            .instrument(span.clone())
+            .await
+            .map_err(CmdFinishError::HistoryStoreFailed)?;
+
         self.active_cmds.insert(id, InFlightCmd {
             history,
             span,
             finalization_mutex: Arc::new(tokio::sync::Mutex::new(())),
         });
-        id
+        Ok(id)
     }
 
     /// The in-flight command recorded under `history_id`.
@@ -369,7 +384,7 @@ impl HistoryJournal {
         span.record("duration", history.duration);
 
         self.history_db
-            .save(&history)
+            .update(&history)
             .instrument(span.clone())
             .await
             .map_err(|e| CmdFinishError::HistoryDbFailed(e.into()))?;
