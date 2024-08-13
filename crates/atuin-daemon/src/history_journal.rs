@@ -343,7 +343,9 @@ impl HistoryJournal {
     /// Returns the [`HistoryId`] identifying the in-flight command, which is later used to
     /// [`HistoryJournal::finish`] or [`HistoryJournal::cancel`] it.
     #[must_use]
-    pub fn start_cmd(&self, history: History) -> HistoryId {
+    pub async fn start_cmd(
+        &self, history: History
+    ) -> Result<HistoryId, CmdFinishError> {
         let id = history.id;
 
         let span = tracing::trace_span!(
@@ -358,12 +360,35 @@ impl HistoryJournal {
             let _ = self.broadcast.send(CmdEvent::Started(history.clone()));
         }
 
+        let (history_record_id, history_record_idx) = self
+            .history_store
+            .push(history.clone())
+            .instrument(span.clone())
+            .await
+            .map_err(CmdFinishError::HistoryStoreFailed)?;
+
+        let mut recorded = Recorded {
+            journal: self,
+            id: id,
+            unsaved: Some((history.command.clone(), history.cwd.clone())),
+        };
+
+        match self.history_db.save(&history).instrument(span.clone()).await {
+            Ok(()) => recorded.unsaved = None,
+            Err(e) => tracing::error!(
+                "recorded command {id}, but could not save it to the history db; run \
+                 `atuin store rebuild history` to restore it: {e}"
+            ),
+        }
+
+        drop(recorded);
+
         self.active_cmds.insert(id, InFlightCmd {
             history,
             span,
             finalization_mutex: Arc::new(tokio::sync::Mutex::new(())),
         });
-        id
+        Ok(id)
     }
 
     /// The in-flight command recorded under `history_id`.
@@ -411,6 +436,9 @@ impl HistoryJournal {
 
         // The record store is the source of truth that history.db is built from, so it's written
         // first: once the record is in, the command is recorded even if the history.db write fails.
+
+        // delete unfinised history record first
+        self.history_store.delete(history.id).await.map_err(CmdFinishError::HistoryStoreFailed)?;
         let (history_record_id, history_record_idx) = self
             .history_store
             .push(history.clone())
@@ -429,7 +457,7 @@ impl HistoryJournal {
 
         // Not an error for the caller: a retry would push a second record. The row comes back the
         // next time history.db is rebuilt from the store.
-        match self.history_db.save(&history).instrument(span.clone()).await {
+        match self.history_db.update(&history).instrument(span.clone()).await {
             Ok(()) => recorded.unsaved = None,
             Err(e) => tracing::error!(
                 "recorded command {history_id}, but could not save it to the history db; run \
