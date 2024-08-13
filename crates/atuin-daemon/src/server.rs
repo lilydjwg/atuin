@@ -66,6 +66,11 @@ impl HistorySvc for HistoryService {
             .build()
             .into();
 
+        self.history_db
+            .save(&h)
+            .await
+            .map_err(|e| Status::internal(format!("failed to write to db: {e:?}")))?;
+
         // The old behaviour had us inserting half-finished history records into the database
         // The new behaviour no longer allows that.
         // History that's running is stored in-memory by the daemon, and only committed when
@@ -103,7 +108,7 @@ impl HistorySvc for HistoryService {
 
             // Perhaps allow the incremental build to handle this entirely.
             self.history_db
-                .save(&history)
+                .update(&history)
                 .await
                 .map_err(|e| Status::internal(format!("failed to write to db: {e:?}")))?;
 
