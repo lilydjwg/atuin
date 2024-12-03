@@ -322,6 +322,10 @@ impl FormatKey for FmtHistory<'_> {
                 let dur = Duration::saturating_from_nanos_i64(self.history.duration);
                 write!(f, "{}", dur.display().largest_unit())?;
             }
+            "duration2" => {
+                let dur = Duration::saturating_from_nanos_i64(self.history.duration);
+                write!(f, "{}", dur.display().stopwatch())?;
+            }
             "time" => {
                 self.history.timestamp.to_offset(self.tz.0).display().ymd_hms().fmt(f)?;
             }
