@@ -333,6 +333,14 @@ impl FormatKey for FmtHistory<'_> {
                 let dur = Duration::saturating_from_nanos_i64(self.history.duration);
                 write!(f, "{}", dur.display().largest_unit())?;
             }
+            "duration_s" => {
+                let s = self.history.duration / 1_000_000_000;
+                write!(f, "{}s", std::cmp::max(s, 0))?;
+            }
+            "duration_ms" => {
+                let s = self.history.duration / 1_000_000;
+                write!(f, "{}ms", std::cmp::max(s, 0))?;
+            }
             "time" => {
                 self.history.timestamp.to_offset(self.tz.0).display().ymd_hms().fmt(f)?;
             }
