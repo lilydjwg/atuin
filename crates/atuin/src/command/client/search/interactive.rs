@@ -461,6 +461,10 @@ impl State {
                 .search
                 .input
                 .remove_next_word(&settings.word_chars, settings.word_jump_mode),
+            KeyCode::Char('d') if alt => self
+                .search
+                .input
+                .remove_next_word(&settings.word_chars, settings.word_jump_mode),
             KeyCode::Delete => {
                 self.search.input.remove();
             }
