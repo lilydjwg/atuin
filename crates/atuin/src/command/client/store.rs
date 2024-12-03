@@ -4,7 +4,7 @@ use eyre::Result;
 use atuin_client::{
     database::Database,
     record::{sqlite_store::SqliteStore, store::Store},
-    settings::Settings,
+    settings::{Settings, Timezone},
 };
 use time::OffsetDateTime;
 
@@ -54,7 +54,7 @@ impl Cmd {
         store: SqliteStore,
     ) -> Result<()> {
         match self {
-            Self::Status => self.status(store).await,
+            Self::Status => self.status(store, settings.timezone).await,
             Self::Rebuild(rebuild) => rebuild.run(settings, store, database).await,
             Self::Rekey(rekey) => rekey.run(settings, store).await,
             Self::Verify(verify) => verify.run(settings, store).await,
@@ -68,7 +68,7 @@ impl Cmd {
         }
     }
 
-    pub async fn status(&self, store: SqliteStore) -> Result<()> {
+    pub async fn status(&self, store: SqliteStore, tz: Timezone) -> Result<()> {
         let host_id = Settings::host_id().expect("failed to get host_id");
 
         let status = store.status().await?;
@@ -95,7 +95,7 @@ impl Cmd {
                     println!("\t\tfirst: {}", first.id.0.as_hyphenated());
 
                     let time =
-                        OffsetDateTime::from_unix_timestamp_nanos(i128::from(first.timestamp))?;
+                        OffsetDateTime::from_unix_timestamp_nanos(i128::from(first.timestamp))?.to_offset(tz.0);
                     println!("\t\t\tcreated: {time}");
                 }
 
@@ -103,7 +103,7 @@ impl Cmd {
                     println!("\t\tlast: {}", last.id.0.as_hyphenated());
 
                     let time =
-                        OffsetDateTime::from_unix_timestamp_nanos(i128::from(last.timestamp))?;
+                        OffsetDateTime::from_unix_timestamp_nanos(i128::from(last.timestamp))?.to_offset(tz.0);
                     println!("\t\t\tcreated: {time}");
                 }
             }
