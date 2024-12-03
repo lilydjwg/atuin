@@ -249,6 +249,14 @@ impl FormatKey for FmtHistory<'_> {
                 let dur = Duration::from_nanos(std::cmp::max(self.history.duration, 0) as u64);
                 format_duration_into(dur, f)?;
             }
+            "duration_s" => {
+                let s = self.history.duration / 1_000_000_000;
+                write!(f, "{}s", std::cmp::max(s, 0))?;
+            }
+            "duration_ms" => {
+                let s = self.history.duration / 1_000_000;
+                write!(f, "{}ms", std::cmp::max(s, 0))?;
+            }
             "time" => {
                 self.history
                     .timestamp
