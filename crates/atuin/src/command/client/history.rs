@@ -713,11 +713,13 @@ impl Cmd {
                 Self::Start { .. } => {
                     let command = self.get_start_command().unwrap_or_default();
                     let (author, intent) = self.get_start_metadata().unwrap_or_default();
-                    return Self::handle_daemon_start(settings, &command, author, intent).await;
+                    let r = Self::handle_daemon_start(settings, &command, author, intent).await;
+                    if r.is_ok() { return r }
                 }
 
-                Self::End { id, exit, duration } => {
-                    return Self::handle_daemon_end(settings, &id, exit, duration).await;
+                Self::End { ref id, exit, duration } => {
+                    let r = Self::handle_daemon_end(settings, id, exit, duration).await;
+                    if r.is_ok() { return r }
                 }
 
                 _ => {}
