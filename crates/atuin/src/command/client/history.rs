@@ -592,7 +592,9 @@ pub(super) async fn start_history_entry(
 ) -> Result<Option<String>> {
     #[cfg(feature = "daemon")]
     if settings.daemon.enabled {
-        return handle_daemon_start(settings, command, author, intent).await;
+        if let Ok(id) = handle_daemon_start(settings, command, author, intent).await {
+            return Ok(id);
+        }
     }
 
     let db_path = &settings.db_path;
@@ -608,7 +610,9 @@ pub(super) async fn end_history_entry(
 ) -> Result<()> {
     #[cfg(feature = "daemon")]
     if settings.daemon.enabled {
-        return handle_daemon_end(settings, id, exit, duration).await;
+        if handle_daemon_end(settings, id, exit, duration).await.is_ok() {
+            return Ok(());
+        }
     }
 
     let db_path = &settings.db_path;
