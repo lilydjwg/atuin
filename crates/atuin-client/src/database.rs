@@ -1134,6 +1134,20 @@ impl Sqlite {
 
         Ok(res)
     }
+
+    #[instrument(level = "trace", skip_all, fields(ids), err)]
+    pub async fn get_by_ids(&self, ids: &[HistoryId]) -> Result<Vec<History>> {
+        let mut res = Vec::with_capacity(ids.len());
+        for id in ids {
+            let h = sqlx::query_as::<_, History>("SELECT * FROM history WHERE id = ?1")
+                .bind(id)
+                .fetch_one(self.sqlite.pool())
+                .await?;
+            res.push(h);
+        }
+
+        Ok(res)
+    }
 }
 
 pub struct Paged {
