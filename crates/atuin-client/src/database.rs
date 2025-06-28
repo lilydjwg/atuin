@@ -283,6 +283,8 @@ pub trait Database: Send + Sync + 'static {
     async fn get_dups(&self, before: i64, dupkeep: u32) -> Result<Vec<History>>;
 
     fn clone_boxed(&self) -> Box<dyn Database + 'static>;
+
+    async fn get_by_ids(&self, ids: &[HistoryId]) -> Result<Vec<History>>;
 }
 
 // Intended for use on a developer machine and not a sync server.
@@ -1033,6 +1035,20 @@ impl Database for Sqlite {
 
     fn clone_boxed(&self) -> Box<dyn Database + 'static> {
         Box::new(self.clone())
+    }
+
+    async fn get_by_ids(&self, ids: &[HistoryId]) -> Result<Vec<History>> {
+        let mut res = Vec::with_capacity(ids.len());
+        for id in ids {
+            let h = sqlx::query("SELECT * FROM history WHERE id = ?1")
+                .bind(&id.0)
+                .map(Self::query_history)
+                .fetch_one(&self.pool)
+                .await?;
+            res.push(h);
+        }
+
+        Ok(res)
     }
 }
 
