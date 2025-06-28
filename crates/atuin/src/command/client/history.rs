@@ -1,10 +1,11 @@
 use std::fmt::{self, Display};
 use std::io::{self, IsTerminal, Write};
+use std::io::Result as IoResult;
 use std::time::Duration;
 
 use atuin_client::database::{Sqlite, current_context};
 use atuin_client::history::store::HistoryStore;
-use atuin_client::history::{AuthorKind, History, probe_author};
+use atuin_client::history::{AuthorKind, History, HistoryId, probe_author};
 #[cfg(feature = "sync")]
 use atuin_client::record;
 use atuin_client::record::sqlite_store::SqliteStore;
@@ -172,6 +173,13 @@ pub enum Cmd {
         /// How many recent duplicates to keep
         #[arg(long)]
         dupkeep: u32,
+    },
+
+    /// Delete history entries matching ids given from stdin
+    DeleteByIds {
+        /// List matching history lines without performing the actual deletion.
+        #[arg(short = 'n', long)]
+        dry_run: bool,
     },
 }
 
@@ -1083,6 +1091,53 @@ impl Cmd {
         Ok(())
     }
 
+    async fn handle_delete_by_ids(
+        db: &Sqlite,
+        settings: &Settings,
+        store: SqliteStore,
+        dry_run: bool,
+    ) -> Result<()> {
+        let ids = std::io::stdin()
+            .lines()
+            .map(|s| s.map(HistoryId))
+            .collect::<IoResult<Vec<_>>>()?;
+        let matches: Vec<History> = db.get_by_ids(&ids).await?;
+
+        if dry_run {
+            print_list(
+                &matches,
+                ListMode::Human,
+                Some(settings.history_format.as_str()),
+                false,
+                false,
+                settings.timezone,
+            );
+        } else {
+            let encryption_key = paseto_v4::Key::try_load_from_path(&settings.key_path)
+                .context("could not load encryption key")?
+                .into();
+            let host_id = Settings::host_id().await?;
+            let history_store = HistoryStore::new(store.clone(), host_id, encryption_key);
+
+            use futures_util::StreamExt;
+            let ids = history_store.delete_entries(matches).await?;
+            history_store.incremental_build(db, &ids).for_each(|r| {
+              match r {
+                Ok(entries) => {
+                  for entry in entries {
+                    eprintln!("deleted {}", entry.id);
+                  }
+                },
+                Err(e) => {
+                  eprintln!("Error deleting entry: {:?}", e);
+                },
+              };
+              std::future::ready(())
+            }).await;
+        }
+        Ok(())
+    }
+
     #[allow(clippy::too_many_lines)]
     #[instrument(level = "trace", skip_all, err)]
     pub async fn run(self, settings: &Settings) -> Result<()> {
@@ -1211,6 +1266,10 @@ impl Cmd {
                             .unix_timestamp_nanos(),
                         )?;
                         Self::handle_dedup(&db, settings, store, before, dupkeep, dry_run).await
+                    }
+
+                    Self::DeleteByIds { dry_run } => {
+                        Self::handle_delete_by_ids(&db, settings, store, dry_run).await
                     }
 
                     Self::Start { .. } | Self::End { .. } | Self::Tail => unreachable!(),
