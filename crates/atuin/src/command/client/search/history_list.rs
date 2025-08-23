@@ -344,7 +344,8 @@ impl DrawState<'_> {
                 .map_or(style, |&meaning| self.theme.as_style(meaning));
             if highlighted {
                 if row_highlighted {
-                    char_style = self.theme.as_style(Meaning::AlertWarn);
+                    use crossterm::style::Stylize;
+                    char_style = style::ContentStyle::new().with(style::Color::DarkCyan);
                 }
                 char_style.attributes.set(style::Attribute::Bold);
             }
