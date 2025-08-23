@@ -318,7 +318,8 @@ impl DrawState<'_> {
                     if row_highlighted {
                         // if the row is highlighted bold is not enough as the whole row is bold
                         // change the color too
-                        style = self.theme.as_style(Meaning::AlertWarn);
+                        use crossterm::style::Stylize;
+                        style = style::ContentStyle::new().with(style::Color::DarkCyan);
                     }
                     style.attributes.set(style::Attribute::Bold);
                 }
