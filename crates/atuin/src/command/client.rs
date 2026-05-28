@@ -332,6 +332,19 @@ impl Cmd {
                     }
                 }
             }
+        } else {
+          let base = tracing_subscriber::registry()
+            .with(fmt::layer())
+            .with(base_filter);
+
+            match &span_path {
+              Some(sp) => {
+                base.with(make_span_layer!(sp)).init();
+              }
+              None => {
+                base.init();
+              }
+            }
         }
 
         tracing::trace!(command = ?self, "client command");
