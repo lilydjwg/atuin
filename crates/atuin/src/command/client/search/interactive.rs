@@ -1271,6 +1271,7 @@ impl State {
             lines.join("\n")
         };
 
+        use ratatui::crossterm::style::{self, Stylize};
         match compactness {
             Compactness::Full => Paragraph::new(command).block(
                 Block::default()
@@ -1279,7 +1280,7 @@ impl State {
                     .title(format!("{:─>width$}", "", width = chunk_width - 2)),
             ),
             _ => Paragraph::new(command)
-                .style(Style::from_crossterm(theme.as_style(Meaning::Annotation))),
+                .style(Style::from_crossterm(style::ContentStyle::new().with(style::Color::Grey))),
         }
     }
 }
