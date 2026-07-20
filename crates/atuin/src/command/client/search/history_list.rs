@@ -350,6 +350,9 @@ impl DrawState<'_> {
                     char_style = style::ContentStyle::new().with(style::Color::DarkCyan);
                 }
                 char_style.attributes.set(style::Attribute::Bold);
+            } else if ellipsized.source_index(i).is_none() {
+                use crossterm::style::Stylize;
+                char_style = style::ContentStyle::new().with(style::Color::DarkGrey);
             }
 
             let mut ch_buf = [0u8; 4];
