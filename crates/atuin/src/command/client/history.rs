@@ -1126,15 +1126,19 @@ impl Cmd {
             let host_id = Settings::host_id().await?;
             let history_store = HistoryStore::new(store.clone(), host_id, encryption_key);
 
-            for entry in matches {
-                eprintln!("deleting {}", entry.id);
-                if settings.sync.records {
-                    let (id, _) = history_store.delete(entry.id).await?;
-                    history_store.incremental_build(db, &[id]).await?;
-                } else {
-                    db.delete(entry).await?;
-                }
-            }
+            use futures_util::StreamExt;
+            let ids = history_store.delete_entries(matches).await?;
+            history_store.incremental_build(db, &ids).for_each(|r| {
+              match r {
+                Ok(entry) => {
+                  eprintln!("deleted {}", entry.id);
+                },
+                Err(e) => {
+                  eprintln!("Error deleting entry: {:?}", e);
+                },
+              };
+              std::future::ready(())
+            }).await;
         }
         Ok(())
     }
