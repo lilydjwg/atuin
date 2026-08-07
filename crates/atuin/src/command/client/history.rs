@@ -495,7 +495,7 @@ async fn handle_daemon_start(
         Ok(id) => id,
         Err(e) => {
             debug!("failed to start history via daemon: {e}");
-            local_id
+            return Err(e.into())
         }
     };
 
