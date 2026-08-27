@@ -1,12 +1,15 @@
 //! Sqlite-related utilities.
 
 mod builder;
+mod compactor;
 mod info;
 
-use std::path::{Path, PathBuf};
+use std::ffi::OsStr;
+use std::path::PathBuf;
 use std::time::Duration;
 
-pub use builder::SqliteBuilder;
+pub use builder::{Journaling, SqliteBuilder};
+use compactor::Compactor;
 pub use info::{Info, VersionError};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool, SqlitePoolOptions};
 use thiserror::Error;
@@ -24,6 +27,9 @@ pub struct Sqlite {
     ///
     /// This value represents that.
     info: EagerFutureCell<Info>,
+
+    /// A periodic task which compacts the WAL if necessary.
+    compactor: Compactor,
 }
 
 #[derive(Debug, Error)]
@@ -46,8 +52,13 @@ pub enum SqliteOpenOrCreateError {
 
 impl Sqlite {
     #[must_use]
-    pub fn builder<P: AsRef<Path>>(path: P) -> SqliteBuilder<P> {
-        SqliteBuilder::new(path)
+    pub fn builder(uri: &OsStr) -> SqliteBuilder<'_> {
+        SqliteBuilder::new(uri)
+    }
+
+    #[must_use]
+    pub fn builder_in_memory() -> SqliteBuilder<'static> {
+        SqliteBuilder::memory()
     }
 
     async fn connect(
@@ -63,10 +74,12 @@ impl Sqlite {
         Ok(Self {
             info: Info::new_eager_future(pool.clone()),
             pool,
+            compactor: Compactor::inactive(),
         })
     }
 
     /// Get the pool of this structure.
+    #[must_use]
     pub fn pool(&self) -> &SqlitePool {
         &self.pool
     }
