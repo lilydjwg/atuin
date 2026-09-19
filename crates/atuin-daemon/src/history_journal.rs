@@ -389,6 +389,9 @@ impl HistoryJournal {
             .await
             .map_err(|e| CmdFinishError::HistoryDbFailed(e.into()))?;
 
+        // delete unfinised history record first
+        self.history_store.delete(history.id).await
+            .map_err(CmdFinishError::HistoryStoreFailed)?;
         let (history_record_id, history_record_idx) = self
             .history_store
             .push(history.clone())
