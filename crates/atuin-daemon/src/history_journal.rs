@@ -564,7 +564,8 @@ impl HistoryJournal {
                 .map_err(|e| CmdDeleteError::HistoryDbFailed(e.into()))?;
         }
 
-        self.reload_search_index(search_settings).await;
+        // This makes deletion slow, taking several seconds to complete
+        // self.reload_search_index(search_settings).await;
 
         Ok(deleted)
     }
