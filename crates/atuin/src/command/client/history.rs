@@ -626,19 +626,29 @@ pub(super) async fn delete_history_entries(
     db: &Sqlite,
     entries: impl IntoIterator<Item = History>,
 ) -> Result<()> {
-    #[cfg(feature = "daemon")]
-    if settings.daemon.enabled {
-        let ids: Vec<HistoryId> = entries.into_iter().map(|h| h.id).collect();
-        daemon::delete_history(settings, ids).await?;
-        return Ok(());
+    let deleted_ids;
+    let history_ids: Vec<HistoryId>;
+    if cfg!(feature = "daemon") && settings.daemon.enabled {
+        let entries2: Vec<History> = entries.into_iter().collect();
+        history_ids = entries2.iter().map(|h| h.id).collect();
+        if let Err(e) = daemon::delete_history(settings, history_ids).await {
+            warn!("failed to delete history via the daemon; deleting it locally instead: {e:#}");
+            deleted_ids = history_store.delete_entries(entries2).await?;
+        } else {
+            return Ok(());
+        }
+    } else {
+        if cfg!(feature = "octavo") {
+            let entries: Vec<_> = entries.into_iter().collect();
+            history_ids = entries.iter().map(|h| h.id).collect();
+            deleted_ids = history_store.delete_entries(entries).await?;
+        } else {
+          deleted_ids = history_store.delete_entries(entries).await?;
+        }
     }
 
-    let entries: Vec<History> = entries.into_iter().collect();
-    #[cfg(feature = "octavo")]
-    let history_ids: Vec<HistoryId> = entries.iter().map(|h| h.id).collect();
 
-    let ids = history_store.delete_entries(entries).await?;
-    history_store.build_all(db, &ids).await?;
+    history_store.build_all(db, &deleted_ids).await?;
 
     #[cfg(feature = "octavo")]
     queue_octavo_deletions(settings, history_ids).await;
