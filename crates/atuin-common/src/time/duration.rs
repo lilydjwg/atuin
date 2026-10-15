@@ -6,7 +6,6 @@
 use core::fmt;
 use core::marker::PhantomData;
 use std::num::NonZeroU64;
-use std::ops::ControlFlow;
 
 use easy_cast::Conv;
 use serde::de::{self, Visitor};
@@ -86,54 +85,33 @@ impl DurationDisplay {
     }
 
     fn fmt_largest_unit(self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fn item(unit: &'static str, value: u64) -> ControlFlow<(&'static str, u64)> {
-            if value > 0 {
-                ControlFlow::Break((unit, value))
-            } else {
-                ControlFlow::Continue(())
-            }
-        }
+        let d = self.duration;
+        let secs = d.as_secs();
+        let nanos = d.subsec_nanos();
 
-        // impl taken and modified from
-        // https://github.com/chronotope/humantime/blob/76c8929b4cc286f675322475a8e1841f35bafc57/src/duration.rs#L427-L465
-        // Copyright (c) 2016 The humantime Developers
-        fn segments(d: std::time::Duration) -> ControlFlow<(&'static str, u64), ()> {
-            let secs = d.as_secs();
-            let nanos = d.subsec_nanos();
+        let (unit, value) = if let years = secs / (86400 * 365 + 86400 / 4) && years > 1 {
+            ("y", years)
+        } else if let months = secs / (86400 * 30 + (86400.0 * 0.44) as u64) && months > 1 {
+            ("mo", months)
+        } else if let days = secs / 86400 && days > 1 {
+            ("d", days)
+        } else if let hours = secs / 3600 && hours > 1 {
+            ("h", hours)
+        } else if let minutes = secs / 60 && minutes > 1 {
+            ("m", minutes)
+        } else if secs > 0 {
+            ("s", secs)
+        } else if let millis = nanos / 1_000_000 && millis > 0 {
+            ("ms", u64::from(millis))
+        } else if let micros = nanos / 1_000 && micros > 0 {
+            ("µs", u64::from(micros))
+        } else if nanos > 0 {
+            ("ns", u64::from(nanos))
+        } else {
+            ("", 0)
+        };
 
-            let years = secs / 31_557_600; // 365.25d
-            let year_days = secs % 31_557_600;
-            let months = year_days / 2_630_016; // 30.44d
-            let month_days = year_days % 2_630_016;
-            let days = month_days / 86400;
-            let day_secs = month_days % 86400;
-            let hours = day_secs / 3600;
-            let minutes = day_secs % 3600 / 60;
-            let seconds = day_secs % 60;
-
-            let millis = nanos / 1_000_000;
-            let micros = nanos / 1_000;
-
-            // a difference from our impl than the original is that
-            // we only care about the most-significant segment of the duration.
-            // If the item call returns `Break`, then the `?` will early-return.
-            // This allows for a very consise impl
-            item("y", years)?;
-            item("mo", months)?;
-            item("d", days)?;
-            item("h", hours)?;
-            item("m", minutes)?;
-            item("s", seconds)?;
-            item("ms", u64::from(millis))?;
-            item("us", u64::from(micros))?;
-            item("ns", u64::from(nanos))?;
-            ControlFlow::Continue(())
-        }
-
-        match segments(self.duration) {
-            ControlFlow::Break((unit, value)) => write!(f, "{value}{unit}"),
-            ControlFlow::Continue(()) => write!(f, "0s"),
-        }
+        write!(f, "{value}{unit}")
     }
 
     fn fmt_stopwatch(self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
