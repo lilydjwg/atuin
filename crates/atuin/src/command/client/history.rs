@@ -630,8 +630,13 @@ pub(super) async fn delete_history_entries(
     let history_ids: Vec<HistoryId>;
     if cfg!(feature = "daemon") && settings.daemon.enabled {
         let entries2: Vec<History> = entries.into_iter().collect();
-        history_ids = entries2.iter().map(|h| h.id).collect();
-        if let Err(e) = daemon::delete_history(settings, history_ids).await {
+        let ids: Vec<HistoryId> = entries2.iter().map(|h| h.id).collect();
+        if cfg!(feature = "octavo") {
+          history_ids = ids.clone();
+        } else {
+          history_ids = vec![];
+        }
+        if let Err(e) = daemon::delete_history(settings, ids).await {
             warn!("failed to delete history via the daemon; deleting it locally instead: {e:#}");
             deleted_ids = history_store.delete_entries(entries2).await?;
         } else {
@@ -643,6 +648,7 @@ pub(super) async fn delete_history_entries(
             history_ids = entries.iter().map(|h| h.id).collect();
             deleted_ids = history_store.delete_entries(entries).await?;
         } else {
+          history_ids = vec![];
           deleted_ids = history_store.delete_entries(entries).await?;
         }
     }
