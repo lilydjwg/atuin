@@ -221,12 +221,14 @@ fn origin_sql_filter(origin: &CmdOrigin) -> String {
     // the cloud. Recipe for disaster.
     //
     // So this function exists.
-    let host = origin.host().into_inner().to_lowercase();
+    //
+    // lilydjwg: change back to treat different users as different hosts because cross-user
+    // commands on the same host aren't usually useful, e.g. administration commands vs regular
+    // user commands.
+    let host = origin.as_str().to_lowercase();
     format!(
-        "(lower(hostname) = {eq} OR (lower(hostname) >= {lo} AND lower(hostname) < {hi}))",
+        "lower(hostname) = {eq}",
         eq = quote(&host),
-        lo = quote(format!("{host}:")),
-        hi = quote(format!("{host};")),
     )
 }
 
