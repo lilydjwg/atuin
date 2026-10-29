@@ -192,14 +192,17 @@ impl VersionedExt for MetadataMap {
         let Some(build) = self.get(BUILD_HEADER_KEY) else {
             return Err(VersionMatchError::Unannounced);
         };
-        if build == *BUILD_METADATA_VALUE {
-            return Ok(());
-        }
         let Ok(theirs) = build.to_str() else {
             return Err(VersionMatchError::Malformed {
                 theirs: build.as_encoded_bytes().to_vec(),
             });
         };
+        if match (theirs.split_once('+'), BUILD_STR.split_once('+')) {
+            (Some((p1, _)), Some((p2, _))) => p1 == p2,
+            _ => theirs == BUILD_STR,
+        } {
+            return Ok(());
+        }
         Err(VersionMatchError::Mismatched {
             theirs: theirs.to_owned(),
             ours: BUILD_STR,
@@ -294,7 +297,12 @@ where
         let theirs = request.headers().get(BUILD_HEADER_KEY);
 
         if self.ungated.contains(&request.uri().path())
-            || theirs.is_some_and(|build| build == BUILD_STR)
+            || theirs.is_some_and(|build| {
+                match (build.to_str().unwrap_or("").split_once('+'), BUILD_STR.split_once('+')) {
+                    (Some((p1, _)), Some((p2, _))) => p1 == p2,
+                    _ => build == BUILD_STR,
+                }
+            })
         {
             return Either::Right(self.inner.call(request).map_ok(Self::stamp as fn(_) -> _));
         }

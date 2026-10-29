@@ -3,3 +3,4 @@
 *-lock.yaml
 *.svg
 /vendor/
+tests/
