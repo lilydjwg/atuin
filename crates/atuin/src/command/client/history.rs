@@ -457,7 +457,7 @@ async fn handle_start(db: &Sqlite, h: &History) {
 }
 
 #[cfg(feature = "daemon")]
-#[instrument(level = "trace", skip_all, err)]
+#[instrument(level = "trace", skip_all)]
 async fn handle_daemon_start(settings: &Settings, h: History) -> Result<HistoryId> {
     daemon::start_history(settings, h).await
 }
@@ -567,9 +567,7 @@ pub(super) async fn start_history_entry(
     if settings.daemon.enabled {
         match handle_daemon_start(settings, h.clone()).await {
             Ok(id) => return Ok(Some(id)),
-            Err(e) => {
-                warn!("failed to start history via the daemon; saving it locally instead: {e:#}");
-            }
+            Err(e) => { }
         }
     }
 
