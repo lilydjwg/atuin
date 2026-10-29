@@ -191,14 +191,24 @@ impl VersionedExt for MetadataMap {
         let Some(build) = self.get(BUILD_HEADER_KEY) else {
             return Err(VersionMatchError::Unannounced);
         };
-        if build == *BUILD_METADATA_VALUE {
-            return Ok(());
-        }
         let Ok(theirs) = build.to_str() else {
             return Err(VersionMatchError::Malformed {
                 theirs: build.as_encoded_bytes().to_vec(),
             });
         };
+        let ours = if let Some((a, _)) = BUILD_STR.split_once('+') {
+          a
+        } else {
+          BUILD_STR
+        };
+        let theirs_stripped = if let Some((a, _)) = theirs.split_once('+') {
+          a
+        } else {
+          theirs
+        };
+        if ours == theirs_stripped {
+            return Ok(());
+        }
         Err(VersionMatchError::Mismatched {
             theirs: theirs.to_owned(),
             ours: BUILD_STR,
