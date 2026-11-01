@@ -1275,21 +1275,16 @@ impl State {
 
     fn build_title(&self, settings: &Settings, theme: &Theme) -> Line<'static> {
         let today = (self.now)().to_offset(settings.timezone.0);
-        let pumpkin = if today.date().is_halloween_season() {
-            " 🎃"
-        } else {
-            ""
-        };
         if self.update_needed.is_some() {
             let error_style: Style = Style::from_crossterm(theme.get_error());
             Line::from(Span::styled(
-                format!("Atuin v{VERSION} - UPDATE{pumpkin}"),
+                format!("Atuin v{VERSION} - UPDATE"),
                 error_style.add_modifier(Modifier::BOLD),
             ))
         } else {
             let style: Style = Style::from_crossterm(theme.as_style(Meaning::Base));
             Line::from(Span::styled(
-                format!("Atuin v{VERSION}{pumpkin}"),
+                format!("Atuin v{VERSION}"),
                 style.add_modifier(Modifier::BOLD),
             ))
         }
